@@ -1,0 +1,28 @@
+# ビルド成果物・依存ライブラリ
+dist/
+build/
+out/
+target/
+node_modules/
+
+# ログ・一時ファイル
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# OS 固有ファイル
+.DS_Store
+Thumbs.db
+
+# エディタ設定（共有したくない場合）
+.vscode/
+.idea/
+*.iml
+
+# 環境変数・認証情報
+.env
+.env.local
+.env.*.local
+*.env
