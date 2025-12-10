@@ -17,14 +17,14 @@ let gameClear = false;
 let spawnCount = 0;            // 20体ごとにボス枠
 const POINT_ENEMY = 1;         // 雑魚
 const POINT_BOSS = 3;          // 既存ボス
-const POINT_BOSS_CROC = 15;    // 新ボス（クロコディロ）
+const POINT_BOSS_CROC = 15;    // 新ボス「クロコ」
 
 // Intervals / rAF
 let gameInterval = null;
 let enemyInterval = null;
 let rafId = null;
 
-// ===== キーボード移動（滑らか制御） =====
+// ===== キーボード移動（滑らか制御）=====
 const key = { left: false, right: false, shoot: false };
 const SPEED = 360;      // px/s
 const ACCEL = 2200;     // px/s^2
@@ -33,7 +33,7 @@ let vx = 0;
 let lastTime = 0;
 
 // 連射クールダウン
-const SHOOT_COOLDOWN = 320; // ms
+const SHOOT_COOLDOWN = 480; // ms
 let lastShot = 0;
 
 // ===== Game Control =====
@@ -46,7 +46,7 @@ function startGame() {
   spawnCount = 0;
   updateStats();
 
-  // 既存オブジェクトのリセット
+  // 既存オブジェクトをリセット
   for (const b of bullets) b.remove();
   bullets = [];
   for (const eb of enemyBullets) eb.remove();
@@ -54,7 +54,7 @@ function startGame() {
   for (const e of enemies) e.remove();
   enemies = [];
 
-  // プレイヤー初期位置（中央）
+  // プレイヤー初期位置を中央へ
   player.style.left = (gameArea.clientWidth - player.clientWidth) / 2 + 'px';
   vx = 0;
 
@@ -90,12 +90,10 @@ function updateLoop(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.033);
   lastTime = now;
 
-  // 目標速度
   let targetV = 0;
   if (key.left)  targetV -= SPEED;
   if (key.right) targetV += SPEED;
 
-  // 加速/減速
   if (targetV !== 0) {
     const dv = ACCEL * dt * Math.sign(targetV - vx);
     if (Math.abs(targetV - vx) <= Math.abs(dv)) vx = targetV;
@@ -106,14 +104,12 @@ function updateLoop(now) {
     else vx += -Math.sign(vx) * decel;
   }
 
-  // 位置更新
   let x = player.offsetLeft + vx * dt;
   const maxX = gameArea.clientWidth - player.clientWidth;
   if (x < 0) x = 0;
   if (x > maxX) x = maxX;
   player.style.left = x + 'px';
 
-  // 連射（押しっぱ対応）
   if (key.shoot) tryShoot(now);
 
   rafId = requestAnimationFrame(updateLoop);
@@ -177,10 +173,9 @@ function createExplosion(x, y) {
 
 // ===== Enemy Spawning =====
 function createEnemy() {
-  // 20体ごとにボス出現
+  // 5体ごとにボス出現
   spawnCount++;
   if (spawnCount % 5 === 0) {
-    // 既存ボスと新ボスをランダムに出現させる
     if (Math.random() < 0.5) createBoss();
     else createCrocBoss();
     return;
@@ -199,15 +194,14 @@ function createBoss() {
   boss.style.left = Math.random() * (gameArea.clientWidth - 60) + 'px';
   boss.style.top  = '-30px';
 
-  // --- 既存ボス専用プロパティ ---
   boss.dataset.type = 'standard';
-  boss.dataset.hp = '3'; // 3発で撃破
+  boss.dataset.hp = '3';
   boss.dataset.maxHp = '3';
   boss.dataset.cooldownMs = '2000';
   boss.dataset.lastShot = String(performance.now());
-  // 横フラフラ用：目標X・速度（px/s）
   boss.dataset.targetX = String(Math.random() * (gameArea.clientWidth - 60));
-  boss.dataset.hSpeed  = String(80 + Math.random() * 80); // 80～160px/sくらい
+  boss.dataset.hSpeed  = String(80 + Math.random() * 80);
+
   gameArea.appendChild(boss);
   enemies.push(boss);
 }
@@ -220,11 +214,11 @@ function createCrocBoss() {
   const bossH = 96;
   const centerX = gameArea.clientWidth / 2;
   const centerY = -40;
-  const radiusX = Math.max(60, (gameArea.clientWidth - bossW) / 2 - 10); // ほぼ左右端まで届く
-  const radiusY = 80; // 横長楕円
+  const radiusX = Math.max(60, (gameArea.clientWidth - bossW) / 2 - 10);
+  const radiusY = 80;
   const angle = Math.random() * Math.PI * 2;
-  const angularSpeed = 2.6; // rad/s（時計回り）
-  const driftY = 1.5; // 徐々に下降
+  const angularSpeed = 2.6;
+  const driftY = 1.5;
 
   const startX = centerX + Math.cos(angle) * radiusX - bossW / 2;
   const startY = centerY + Math.sin(angle) * radiusY - bossH / 2;
@@ -302,7 +296,7 @@ function moveEnemy() {
         let x = enemy.offsetLeft;
 
         let targetX = parseFloat(enemy.dataset.targetX || '0');
-        let hSpeed  = parseFloat(enemy.dataset.hSpeed  || '120'); // px/s
+        let hSpeed  = parseFloat(enemy.dataset.hSpeed  || '120');
         const step = (hSpeed / 20); // 50msあたりの移動量
 
         if (isNaN(targetX) || Math.abs(targetX - x) < 4) {
@@ -332,12 +326,11 @@ function moveEnemy() {
         if (isBoss) {
           const destroyed = handleBossHit(enemy, bossType, j, i);
           if (destroyed) {
-            break; // この敵は消えた
+            break;
           } else {
-            continue; // 次の弾へ
+            continue;
           }
         } else {
-          // 雑魚：即撃破
           createExplosion(enemy.offsetLeft, enemy.offsetTop);
           bullet.remove();
           enemy.remove();
@@ -346,7 +339,7 @@ function moveEnemy() {
           score += POINT_ENEMY;
           updateStats();
           checkGameClear();
-          break; // この敵は消えた
+          break;
         }
       }
     }
@@ -387,13 +380,12 @@ function moveCrocBoss(enemy) {
   let cx = parseFloat(enemy.dataset.cx || gameArea.clientWidth / 2);
   let cy = parseFloat(enemy.dataset.cy || -40);
   let angle = parseFloat(enemy.dataset.angle || '0');
-  const angularSpeed = parseFloat(enemy.dataset.angularSpeed || '2.6'); // rad/s
+  const angularSpeed = parseFloat(enemy.dataset.angularSpeed || '2.6');
   const driftY = parseFloat(enemy.dataset.driftY || '1.5');
   const dt = 0.05; // 50ms interval
 
-  // 時計回りの楕円運動（横長）、中心をゆっくり下降
   cy += driftY;
-  angle -= angularSpeed * dt; // 時計回り
+  angle -= angularSpeed * dt;
   enemy.dataset.angle = String(angle);
   enemy.dataset.cx = String(cx);
   enemy.dataset.cy = String(cy);
@@ -440,7 +432,7 @@ function handleBossHit(enemy, bossType, bulletIndex, enemyIndex) {
     createExplosion(enemy.offsetLeft, enemy.offsetTop);
     if (bullets[bulletIndex]) bullets[bulletIndex].remove();
     bullets.splice(bulletIndex, 1);
-    return false; // 生存
+    return false;
   } else {
     enemy.style.filter = '';
     createExplosion(enemy.offsetLeft, enemy.offsetTop);
@@ -451,7 +443,7 @@ function handleBossHit(enemy, bossType, bulletIndex, enemyIndex) {
     score += bossType === 'croc' ? POINT_BOSS_CROC : POINT_BOSS;
     updateStats();
     checkGameClear();
-    return true; // 撃破
+    return true;
   }
 }
 
@@ -477,7 +469,7 @@ function getBossHitFilter(bossType, hits) {
 function applyBossKnockback(enemy) {
   if (!enemy || !enemy.classList.contains('boss')) return;
   const currentTop = parseInt(enemy.style.top || '-30', 10);
-  const newTop = Math.max(-120, currentTop - 12); // 少し上へ押し戻す（最低-120pxまで）
+  const newTop = Math.max(-120, currentTop - 12);
   enemy.style.top = newTop + 'px';
 }
 
